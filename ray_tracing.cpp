@@ -34,8 +34,9 @@ struct st{
 struct ob
 {
     float x, y, z;
-    float r, g,b,ka,kd;
+    float r, g,b,ka,kd,ks;
     float radius;
+    int shiny;
 };
 
 int xmin = -320, xmax = 319, ymin = -240, ymax = 239;
@@ -83,8 +84,8 @@ static void display(void){
     int offsety = abs(ymin);
     st pixel[totalx][totaly];
 
-    double copx = 0, copy = 0, copz = 300, zp = 0, lsx = 100, lsy = 50, lsz =-30;
-    double isr = 1, isg = 1, isb = 1, iar = 1, iag = 1, iab = 1;
+    double copx = 10, copy = 50, copz = 0, zp = -500, lsx = -200, lsy = 400, lsz =-100;
+    double isr = 0.8, isg = 0.8, isb = 0.8, iar = 0.1, iag = 0.1, iab = 0.1;
 
     for (int i = xmin; i <= xmax; i++)
     {
@@ -104,7 +105,7 @@ static void display(void){
     ob object[obnum];
     for (int k = 0; k < obnum; k++)
     {
-        input>> object[k].x>> object[k].y>> object[k].z>> object[k].radius>> object[k].r >> object[k].g >> object[k].b >> object[k].ka >> object[k].kd;
+        input>> object[k].x>> object[k].y>> object[k].z>> object[k].radius>> object[k].r >> object[k].g >> object[k].b >> object[k].ka >> object[k].kd >> object[k].ks >> object[k].shiny;
 
         //cout << object[k].x<< object[k].y<< object[k].z<< object[k].radius<< object[k].r << object[k].g << object[k].b << endl;
     }
@@ -155,13 +156,38 @@ static void display(void){
 
                 double dot = ((nx*lx) + (ny*ly) +(nz*lz));
 
-                double ir = object[obcnt].kd*isr*fmax(0,dot);
-                double ig = object[obcnt].kd*isg*fmax(0,dot);
-                double ib = object[obcnt].kd*isb*fmax(0,dot);
+                double ir = (object[obcnt].ka*iar) + (object[obcnt].kd*isr*fmax(0,dot));
+                double ig = (object[obcnt].ka*iag) + (object[obcnt].kd*isg*fmax(0,dot));
+                double ib = (object[obcnt].ka*iab) + (object[obcnt].kd*isb*fmax(0,dot));
+                if(obcnt == 0){
+                    pixel[i+offsetx][j+offsety].r = object[obcnt].r * (ir);
+                    pixel[i+offsetx][j+offsety].g = object[obcnt].g * (ig);
+                    pixel[i+offsetx][j+offsety].b = object[obcnt].b * (ib);
+                }
+                else if(obcnt == 1){
+                    double vx = copx - px;
+                    double vy = copy - py;
+                    double vz = copz - pz;
 
-                pixel[i+offsetx][j+offsety].r = object[obcnt].r * (ir + (object[obcnt].ka*iar));
-                pixel[i+offsetx][j+offsety].g = object[obcnt].g * (ig + (object[obcnt].ka*iag));
-                pixel[i+offsetx][j+offsety].b = object[obcnt].b * (ib + (object[obcnt].ka*iab));
+                    double lengthv = dist(vx,vy,vz);
+                    vx/= lengthv;
+                    vy/= lengthv;
+                    vz/= lengthv;
+
+                    double hx = (lx + vx)/2;
+                    double hy = (ly + vy)/2;
+                    double hz = (lz + vz)/2;
+
+                    dot = ((nx*hx) + (ny*hy) +(nz*hz));
+
+                    ir += object[obcnt].ks*isr*pow(fmax(0,dot),object[obcnt].shiny);
+                    ig += object[obcnt].ks*isg*pow(fmax(0,dot),object[obcnt].shiny);
+                    ib += object[obcnt].ks*isb*pow(fmax(0,dot),object[obcnt].shiny);
+
+                    pixel[i+offsetx][j+offsety].r = object[obcnt].r * (ir);
+                    pixel[i+offsetx][j+offsety].g = object[obcnt].g * (ig);
+                    pixel[i+offsetx][j+offsety].b = object[obcnt].b * (ib);
+                }
             }
             glColor3d(pixel[i+offsetx][j+offsety].r,pixel[i+offsetx][j+offsety].g,pixel[i+offsetx][j+offsety].b);
             glVertex2i(i, j);
